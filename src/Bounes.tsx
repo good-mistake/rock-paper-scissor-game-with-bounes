@@ -17,7 +17,13 @@ const initialState = {
   winnerResult: "",
   showModal: false,
 };
-
+const rules = {
+  rock: { beats: ["scissors", "lizard"], losesTo: ["paper", "spock"] },
+  paper: { beats: ["rock", "spock"], losesTo: ["scissors", "lizard"] },
+  scissors: { beats: ["paper", "lizard"], losesTo: ["rock", "spock"] },
+  lizard: { beats: ["spock", "paper"], losesTo: ["rock", "scissors"] },
+  spock: { beats: ["scissors", "rock"], losesTo: ["paper", "lizard"] },
+};
 const reducer = (state, action) => {
   switch (action.type) {
     case "SET_USER_CHOICE":
@@ -54,16 +60,22 @@ const Bounes = () => {
   };
   const getRandomItem = (delay: number): Promise<string> => {
     return new Promise<string>((resolve) => {
-      const items = ["rock", "paper", "scissors"];
+      const items = ["rock", "paper", "scissors", "lizard", "spock"];
       const randomNumber = Math.floor(Math.random() * items.length);
       const randomItem = items[randomNumber];
       setTimeout(() => {
+        console.log("Random pick:", randomItem);
         resolve(randomItem);
       }, delay);
     });
   };
   const handleOptionChange = (value) => {
     dispatch({ type: "SET_USER_CHOICE", payload: value });
+
+    const items = ["rock", "paper", "scissors", "lizard", "spock"];
+    const randomNumber = Math.floor(Math.random() * items.length);
+    const randomItem = items[randomNumber];
+    dispatch({ type: "SET_HOUSE_PICK", payload: randomItem });
   };
   const handleUserChoice = () => {
     if (userChoice === "paper") {
@@ -302,61 +314,35 @@ const Bounes = () => {
       </>
     );
   }
-
-  const handleWinner = (user: string, house: string) => {
-    const rules = {
-      rock: { beats: ["scissors", "lizard"], losesTo: ["paper", "spock"] },
-      paper: { beats: ["rock", "spock"], losesTo: ["scissors", "lizard"] },
-      scissors: { beats: ["paper", "lizard"], losesTo: ["rock", "spock"] },
-      lizard: { beats: ["spock", "paper"], losesTo: ["rock", "scissors"] },
-      spock: { beats: ["scissors", "rock"], losesTo: ["paper", "lizard"] },
-    };
-    const lowercaseUserChoice = user.toLowerCase();
-    if (!rules[lowercaseUserChoice]) {
-      console.error("Invalid user choice:", lowercaseUserChoice);
-      return;
-    }
-    if (lowercaseUserChoice === house) {
-      dispatch({ type: "SET_WINNER_RESULT", payload: "TIE" });
-    } else if (rules[lowercaseUserChoice].beats.includes(house)) {
-      dispatch({ type: "SET_SCORE", payload: score + 1 });
-      dispatch({ type: "SET_WINNER_RESULT", payload: "WIN" });
-    } else {
-      dispatch({ type: "SET_WINNER_RESULT", payload: "LOSE" });
-    }
-  };
-
   useEffect(() => {
-    if (userChoice.length > 1) {
+    if (userChoice) {
       dispatch({ type: "SET_LOADING", payload: true });
       getRandomItem(1000).then((randomPick) => {
         dispatch({ type: "SET_HOUSE_PICK", payload: randomPick });
         dispatch({ type: "SET_LOADING", payload: false });
+
+        setTimeout(() => {
+          let result = "";
+          if (userChoice === randomPick) {
+            result = "TIE";
+          } else if (rules[userChoice]?.beats.includes(randomPick)) {
+            result = "WIN";
+            dispatch({ type: "SET_SCORE", payload: score + 1 });
+          } else {
+            result = "LOSE";
+          }
+          dispatch({ type: "SET_WINNER_RESULT", payload: result });
+        }, 500); // 500ms delay before showing the winner result
       });
     }
   }, [userChoice]);
 
-  useEffect(() => {
-    if (housePick && !isLoadingHousePick) {
-      const timer = setTimeout(() => {
-        handleWinner(userChoice, housePick);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [housePick, isLoadingHousePick]);
-
   const handlePlayAgain = () => {
-    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_USER_CHOICE", payload: "" });
     dispatch({ type: "SET_WINNER_RESULT", payload: "" });
     dispatch({ type: "SET_HOUSE_PICK", payload: "" });
-    dispatch({ type: "SET_USER_CHOICE", payload: "" });
-
-    getRandomItem(1000).then((randomPick) => {
-      dispatch({ type: "SET_HOUSE_PICK", payload: "" }); //fix it here the rendering issue persist
-      dispatch({ type: "SET_LOADING", payload: false });
-    });
   };
+
   const toggleModal = () => {
     dispatch({ type: "TOGGLE_MODAL" });
   };

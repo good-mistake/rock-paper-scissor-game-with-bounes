@@ -223,7 +223,7 @@ const Home = () => {
     }
   };
   useEffect(() => {
-    if (userChoice.length > 1) {
+    if (userChoice) {
       dispatch({ type: "SET_LOADING", payload: true });
       getRandomItem(1000).then((randomPick) => {
         dispatch({ type: "SET_HOUSE_PICK", payload: randomPick });
@@ -236,21 +236,16 @@ const Home = () => {
     if (housePick && !isLoadingHousePick) {
       const timer = setTimeout(() => {
         handleWinner(userChoice, housePick);
-      }, 1000);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
   }, [housePick, isLoadingHousePick, userChoice]);
   const handlePlayAgain = () => {
     dispatch({ type: "SET_USER_CHOICE", payload: "" });
-    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_LOADING", payload: false });
     dispatch({ type: "SET_WINNER_RESULT", payload: "" });
     dispatch({ type: "SET_HOUSE_PICK", payload: "" });
-
-    getRandomItem(1000).then((randomPick) => {
-      dispatch({ type: "SET_HOUSE_PICK", payload: "" }); //fix it here the rendering issue persist
-      dispatch({ type: "SET_LOADING", payload: false });
-    });
   };
   const toggleModal = () => {
     dispatch({ type: "TOGGLE_MODAL" });
